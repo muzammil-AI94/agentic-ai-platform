@@ -1,7 +1,69 @@
-global:
-  scrape_interval: 15s
+name: CI
 
-scrape_configs:
-  - job_name: "agentic-ai-platform"
-    static_configs:
-      - targets: ["host.docker.internal:8001"]
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Lint with ruff
+        run: |
+          # Only lint if Python files exist
+          if find src -name "*.py" | grep -q .; then
+            ruff check src/
+          else
+            echo "No Python files yet — skipping lint"
+          fi
+
+  type-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install mypy
+        run: pip install mypy
+
+      - name: Type check
+        run: |
+          if find src -name "*.py" ! -name "__init__.py" | grep -q .; then
+            mypy src/
+          else
+            echo "No Python files yet — skipping type check"
+          fi
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pytest
+        run: pip install pytest pytest-asyncio
+
+      - name: Run tests
+        run: |
+          if find tests -name "test_*.py" | grep -q .; then
+            pytest tests/unit/ -v
+          else
+            echo "No tests yet — skipping"
+          fi
